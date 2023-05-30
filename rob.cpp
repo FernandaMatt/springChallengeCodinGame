@@ -72,9 +72,6 @@ public:
 
 	//cube coordinates
 	Hex	cube;
-	// int	q;
-	// int	r;
-	// int	s;
 
 	int resources;
 	int myAnts;
@@ -128,6 +125,15 @@ list<int>	initCellList(int a, int b) {
     return cellList;
 }
 
+bool	findCell(int cellIndex, list<int> list) {
+	
+	for (int cell : list) {
+		if (cell == cellIndex)
+			return true;		
+	}
+	return false;
+}
+
 int	nextResourceful(Map lvMap, int type)
 {
 	int	nextRes = -1;
@@ -153,50 +159,42 @@ void	map_neighbors(const Cell& cur_Cell, Map& lvlMap) {
 
 	cerr << "map_neighbors: " << endl;
 	for (auto i = 0; i < 6; i++){
-		cerr << cur_Cell.neigh[i] << " : q[" << lvlMap.Cells[cur_Cell.neigh[i]].cube.q
-			 << "] r[" << lvlMap.Cells[cur_Cell.neigh[i]].cube.r << "] s["
-			 << lvlMap.Cells[cur_Cell.neigh[i]].cube.s << "]"
-			 << endl;
+		if (cur_Cell.neigh[i] != -1) {
+			cerr << cur_Cell.neigh[i] << " : q[" << lvlMap.Cells[cur_Cell.neigh[i]].cube.q
+				 << "] r[" << lvlMap.Cells[cur_Cell.neigh[i]].cube.r << "] s["
+				 << lvlMap.Cells[cur_Cell.neigh[i]].cube.s << "] | " ;
+		}
 	}
+	cerr << endl;
 };
 
 void	map_coordinates(Map& lvMap) {
 	
-	list<int>	cellsList;
-	// list<int>	mapped;
-	// int			curCell;
+	list<int>	unmapped;
+	list<int>	cellMapped;
+	list<int>	neighMapped;
+	int			curCell;
 
-	// cerr << "number of cells: " << lvMap.numberOfCells << endl;
-	cellsList = initCellList(0, lvMap.numberOfCells - 1);
-	// for (int num : unmapped) {
-	// cerr << num << " ";
-	// }
-	// cerr << endl;
+	unmapped = initCellList(0, lvMap.numberOfCells - 1);
 	
 	lvMap.Cells[lvMap.myBaseIndex].cube.set(0, 0, 0); // defining base coordinate as origin
 
-	// unmapped.remove(lvMap.myBaseIndex);
-	// mapped.push_back(lvMap.myBaseIndex);
+	unmapped.remove(lvMap.myBaseIndex);
+	cellMapped.push_back(lvMap.myBaseIndex);
 
-	// while(!unmapped.empty())
-	// {
-	// 	curCell = mapped.back();
-	map_neighbors(lvMap.Cells[lvMap.myBaseIndex], lvMap);
-	// 	for (int i = 0; i < 6; i++){
-	// 		unmapped.remove(lvMap.Cells[curCell].neigh[i]);
-	// 		mapped.push_back(lvMap.Cells[curCell].neigh[i]);
-	// 	}
-	// }
-
-	// for (int num : unmapped) {
-	// cerr << num << " ";
-	// }
-	// cerr << endl;
-	
-	map_neighbors(lvMap.Cells[9], lvMap);
-	// map_neighbors(lvMap.Cells[1], lvMap);
-	// map_neighbors(lvMap.Cells[5], lvMap);
-	// map_neighbors(lvMap.Cells[9], lvMap);
+	while(!unmapped.empty())
+	{
+		curCell = cellMapped.back();
+		cellMapped.remove(curCell);
+		map_neighbors(lvMap.Cells[curCell], lvMap);
+		for (int i = 0; i < 6; i++){
+			if (lvMap.Cells[curCell].neigh[i] != -1 && findCell(lvMap.Cells[curCell].neigh[i], unmapped)) {
+				cerr << "cell: " << lvMap.Cells[curCell].neigh[i] << "found in unmapped" <<endl;
+				unmapped.remove(lvMap.Cells[curCell].neigh[i]);
+				cellMapped.push_back(lvMap.Cells[curCell].neigh[i]);
+			}
+		}
+	}
 };
 
 /******		Main		******/
