@@ -156,23 +156,13 @@ void	map_neighbors(const Cell& cur_Cell, Map& lvlMap) {
 			lvlMap.Cells[cur_Cell.neigh[i]].cube = cur_Cell.cube + dirVector[i];
 		}
 	}
-
-	cerr << "map_neighbors: " << endl;
-	for (auto i = 0; i < 6; i++){
-		if (cur_Cell.neigh[i] != -1) {
-			cerr << cur_Cell.neigh[i] << " : q[" << lvlMap.Cells[cur_Cell.neigh[i]].cube.q
-				 << "] r[" << lvlMap.Cells[cur_Cell.neigh[i]].cube.r << "] s["
-				 << lvlMap.Cells[cur_Cell.neigh[i]].cube.s << "] | " ;
-		}
-	}
-	cerr << endl;
 };
 
 void	map_coordinates(Map& lvMap) {
 	
 	list<int>	unmapped;
-	list<int>	cellMapped;
-	list<int>	neighMapped;
+	list<int>	mapped;
+	// list<int>	neighMapped;
 	int			curCell;
 
 	unmapped = initCellList(0, lvMap.numberOfCells - 1);
@@ -180,18 +170,17 @@ void	map_coordinates(Map& lvMap) {
 	lvMap.Cells[lvMap.myBaseIndex].cube.set(0, 0, 0); // defining base coordinate as origin
 
 	unmapped.remove(lvMap.myBaseIndex);
-	cellMapped.push_back(lvMap.myBaseIndex);
+	mapped.push_back(lvMap.myBaseIndex);
 
 	while(!unmapped.empty())
 	{
-		curCell = cellMapped.back();
-		cellMapped.remove(curCell);
+		curCell = mapped.back();
+		mapped.remove(curCell);
 		map_neighbors(lvMap.Cells[curCell], lvMap);
 		for (int i = 0; i < 6; i++){
 			if (lvMap.Cells[curCell].neigh[i] != -1 && findCell(lvMap.Cells[curCell].neigh[i], unmapped)) {
-				cerr << "cell: " << lvMap.Cells[curCell].neigh[i] << "found in unmapped" <<endl;
 				unmapped.remove(lvMap.Cells[curCell].neigh[i]);
-				cellMapped.push_back(lvMap.Cells[curCell].neigh[i]);
+				mapped.push_back(lvMap.Cells[curCell].neigh[i]);
 			}
 		}
 	}
@@ -228,29 +217,10 @@ int main()
 		cin >> levelMap.opBaseIndex; cin.ignore();
 	}
 
-	cerr << levelMap.Cells[8].neigh[0] << endl;
-	cerr << levelMap.Cells[8].neigh[1] << endl;
-	cerr << levelMap.Cells[8].neigh[2] << endl;
-	cerr << levelMap.Cells[8].neigh[3] << endl;
-	cerr << levelMap.Cells[8].neigh[4] << endl;
-	cerr << levelMap.Cells[8].neigh[5] << endl;
 
 	// MAPPING COORDINATES //
 
 	map_coordinates(levelMap);
-
-	cerr	<< "My Base Coordinates: q[" << levelMap.Cells[levelMap.myBaseIndex].cube.q << "] r["
-			<< levelMap.Cells[levelMap.myBaseIndex].cube.r << "] s[" << levelMap.Cells[levelMap.myBaseIndex].cube.s
-			<< "]" << endl;
-
-	cerr << "ResCells:" << endl;
-	for (int index : ResCells)
-		cerr << index << " ";
-	cerr << endl ;
-	cerr << "EggCells:" << endl;
-	for (int index : EggCells)
-		cerr << index << " ";
-	cerr << endl ;
 
 	// DISTANCE CALC //
 
