@@ -1,2 +1,3 @@
 https://www.redblobgames.com/grids/hexagons/
 https://www.codingame.com/ide/challenge/spring-challenge-2023
+https://blog.theknightsofunity.com/pathfinding-on-a-hexagonal-grid-a-algorithm/
