@@ -73,6 +73,11 @@ public:
 	//cube coordinates
 	Hex	cube;
 
+	//a * variables
+	int g = -1;
+	int h = -1;
+	int f = -1;
+
 	int resources;
 	int myAnts;
 	int opAnts;
@@ -113,7 +118,19 @@ Map::~Map()
 }
 
 
-/******		FUNCTIONS		******/
+/******		HEX FUNCTIONS		******/
+
+Hex hex_subtract(Hex a, Hex b) {
+    return Hex(a.q - b.q, a.r - b.r, a.s - b.s);
+}
+
+int hex_length(Hex hex) {
+    return int((abs(hex.q) + abs(hex.r) + abs(hex.s)) / 2);
+}
+
+int hex_distance(Hex a, Hex b) {
+    return hex_length(hex_subtract(a, b));
+}
 
 list<int>	initCellList(int a, int b) {
 
@@ -148,21 +165,12 @@ int	nextResourceful(Map lvMap, int type)
 	return (nextRes);
 }
 
-void	map_neighbors(const Cell& cur_Cell, Map& lvlMap) {
-	
-	
-	for (int i = 0; i < 6; i++) { //protect not to reassign
-		if (cur_Cell.neigh[i] != -1) {
-			lvlMap.Cells[cur_Cell.neigh[i]].cube = cur_Cell.cube + dirVector[i];
-		}
-	}
-};
+/******		MAP FUNCTIONS		******/
 
 void	map_coordinates(Map& lvMap) {
 	
 	list<int>	unmapped;
 	list<int>	mapped;
-	// list<int>	neighMapped;
 	int			curCell;
 
 	unmapped = initCellList(0, lvMap.numberOfCells - 1);
@@ -176,15 +184,19 @@ void	map_coordinates(Map& lvMap) {
 	{
 		curCell = mapped.back();
 		mapped.remove(curCell);
-		map_neighbors(lvMap.Cells[curCell], lvMap);
 		for (int i = 0; i < 6; i++){
 			if (lvMap.Cells[curCell].neigh[i] != -1 && findCell(lvMap.Cells[curCell].neigh[i], unmapped)) {
+				lvMap.Cells[lvMap.Cells[curCell].neigh[i]].cube = lvMap.Cells[curCell].cube + dirVector[i];
 				unmapped.remove(lvMap.Cells[curCell].neigh[i]);
 				mapped.push_back(lvMap.Cells[curCell].neigh[i]);
 			}
 		}
 	}
 };
+
+/******		PATHFINDING FUNCTIONS		******/
+
+
 
 /******		Main		******/
 
@@ -224,7 +236,13 @@ int main()
 
 	// DISTANCE CALC //
 
+	cerr << "the distance between index 28 and base is: "
+		 << hex_distance(levelMap.Cells[21].cube, levelMap.Cells[28].cube)
+		  << endl;
 
+	cerr << "the distance between index 22 and base is: "
+		 << hex_distance(levelMap.Cells[21].cube, levelMap.Cells[22].cube)
+		  << endl;
 
 	// usleep(950000);
 	// game loop
