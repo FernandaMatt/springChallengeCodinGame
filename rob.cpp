@@ -142,7 +142,7 @@ list<int>	initCellList(int a, int b) {
     return cellList;
 }
 
-bool	findCell(int cellIndex, list<int> list) {
+bool	findCellindex(int cellIndex, list<int> list) {
 	
 	for (int cell : list) {
 		if (cell == cellIndex)
@@ -185,7 +185,7 @@ void	map_coordinates(Map& lvMap) {
 		curCell = mapped.back();
 		mapped.remove(curCell);
 		for (int i = 0; i < 6; i++){
-			if (lvMap.Cells[curCell].neigh[i] != -1 && findCell(lvMap.Cells[curCell].neigh[i], unmapped)) {
+			if (lvMap.Cells[curCell].neigh[i] != -1 && findCellindex(lvMap.Cells[curCell].neigh[i], unmapped)) {
 				lvMap.Cells[lvMap.Cells[curCell].neigh[i]].cube = lvMap.Cells[curCell].cube + dirVector[i];
 				unmapped.remove(lvMap.Cells[curCell].neigh[i]);
 				mapped.push_back(lvMap.Cells[curCell].neigh[i]);
@@ -196,10 +196,34 @@ void	map_coordinates(Map& lvMap) {
 
 /******		PATHFINDING FUNCTIONS		******/
 
+bool	findCell(Cell end, list<Cell> list) {
+	
+	for (Cell cell : list) {
+		if (cell.cube == end.cube)
+			return true;		
+	}
+	return false;
+}
+
+bool	compareFGHValues (Cell a, Cell b) {
+	if (a.f < b.f)
+		return (true);
+	else if (b.f < a.f)
+		return (false);
+	else {
+		if (a.h < b.h)
+			return (true);
+		else if (a.h > b.h)
+			return (false);
+	}
+	return false;
+}
+
 list<int>	aStar(int startCell, int end, vector<Cell> grid) {
 
 	list<Cell>	openCells;
 	list<Cell>	closedCells;
+	int			g;
 
 	Cell	currentCell = grid[startCell];
 	Cell	endCell = grid[end];
@@ -209,7 +233,19 @@ list<int>	aStar(int startCell, int end, vector<Cell> grid) {
 
 	while (!openCells.empty())
 	{
-		
+		openCells.remove(currentCell);
+		closedCells.push_front(currentCell);
+		g = currentCell.g + 1;
+		if (findCell(endCell, closedCells)) {
+			break;
+		}
+		for (int neighIndex : currentCell.neigh)
+		{
+			Cell neigh = 
+			if (neigh != -1 && findCell(grid[currentCell.neigh[neigh]], closedCells)) {
+				if (!findCell)
+			}
+		}
 	}
 
 	return (list<int> {});
