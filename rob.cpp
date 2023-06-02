@@ -66,6 +66,7 @@ class Cell
 private:
 
 public:
+	int	index;;
 	int	type;
 	int	initialResources;
 	int neigh[6];
@@ -84,7 +85,13 @@ public:
 
 	Cell();
 	~Cell();
+
 };
+
+bool operator==(const Cell& cell1, const Cell& cell2)
+{
+	return cell1.cube == cell2.cube;
+}
 
 Cell::Cell()
 {
@@ -199,8 +206,8 @@ void	map_coordinates(Map& lvMap) {
 bool	findCell(Cell end, list<Cell> list) {
 	
 	for (Cell cell : list) {
-		if (cell.cube == end.cube)
-			return true;		
+		if (cell.index == end.index)
+			return true;
 	}
 	return false;
 }
@@ -219,7 +226,43 @@ bool	compareFGHValues (Cell a, Cell b) {
 	return false;
 }
 
-list<int>	aStar(int startCell, int end, vector<Cell> grid) {
+list<Cell>	backTrack(Cell endCell, list<Cell> closedCells, vector<Cell> &grid) {
+
+	list<Cell> finalPath;
+	Cell currentCell;
+	currentCell = endCell;
+	for (Cell cell : closedCells) {
+		cerr << "i:" << cell.index << " , g:" << cell.g << endl;
+	}
+	cerr << endl;
+	// cerr << "n of Cells: " << closedCells.size() << endl;
+	// cerr << "index endCell: " << endCell.g << endl;
+	// cerr << "index endCell: " << closedCells.back().g << endl;
+	finalPath.push_front(currentCell);
+	while (currentCell.g != 0) {
+		cerr << "entrou no loop" << endl;
+		for (int neighIndex : endCell.neigh) {
+			if ( neighIndex == -1) {
+				continue ;
+			}
+			Cell neigh = grid[neighIndex];
+			if (findCell(neigh, closedCells)) {
+				if (neigh.g < currentCell.g) {
+					finalPath.push_front(neigh);
+					currentCell = neigh;
+					break ;
+				}
+			}
+		}
+	}
+	for (Cell cell : finalPath) {
+		cerr << cell.index << ", " ;
+	}
+	cerr << endl;
+	return (finalPath);
+}
+
+list<Cell>	aStar(int startCell, int end, vector<Cell> &grid) {
 
 	list<Cell>	openCells;
 	list<Cell>	closedCells;
@@ -229,26 +272,67 @@ list<int>	aStar(int startCell, int end, vector<Cell> grid) {
 	Cell	endCell = grid[end];
 	currentCell.g = 0;
 	currentCell.h = hex_distance(currentCell.cube, endCell.cube);
+	currentCell.f = currentCell.g + currentCell.h;
 	openCells.push_back(currentCell);
 
 	while (!openCells.empty())
+	// for (int a = 0; a < 10; a++)
 	{
+		openCells.sort(&compareFGHValues);
+		currentCell = openCells.front();
+		// for (Cell cell : openCells)
+		// {
+			// cerr << "rodada " << a << endl;
+		// 	cerr << "index is: "
+		// 		<< cell.index
+		// 		<< endl;
+		// 	cerr << "adress is: "
+		// 		<< cell.cube.q << " ," << cell.cube.r << ", " << cell.cube.s
+		// 		<< endl;
+		// 	cerr << "neighbors are: " ;
+		// 		for (int i : cell.neigh)
+		// 		{
+		// 			cerr << i << ", ";
+		// 		}
+		// 		cerr << endl;
+		// }
 		openCells.remove(currentCell);
 		closedCells.push_front(currentCell);
 		g = currentCell.g + 1;
 		if (findCell(endCell, closedCells)) {
+			// cerr <<"found end cell" << endl;
 			break;
 		}
-		for (int neighIndex : currentCell.neigh)
-		{
-			Cell neigh = 
-			if (neigh != -1 && findCell(grid[currentCell.neigh[neigh]], closedCells)) {
-				if (!findCell)
+		// else
+			// cerr <<"end cell not found" << endl;
+		for (int neighIndex : currentCell.neigh) {
+			if (neighIndex == -1) {
+				// cerr << "neighbor not found." <<endl;
+				continue;
 			}
+			Cell neigh = grid[neighIndex];
+			// cerr << "neighbor found, index: " << neighIndex << endl;
+			if (findCell(neigh, closedCells)) {
+				// cerr << "already in closedCells" << endl;
+				continue;
+			}
+			// cerr << "neighbor not in closedCells, index:" << neigh.index <<endl;
+			if (!findCell(neigh, openCells)) {
+				neigh.g = g;
+				neigh.h = hex_distance(neigh.cube, endCell.cube);
+				neigh.f = neigh.g + neigh.h;
+				openCells.push_front(neigh);
+			}
+			else if (neigh.f > g + neigh.h)
+				neigh.g = g;
 		}
 	}
+	list<Cell> finalPath;
 
-	return (list<int> {});
+	if (findCell(endCell, closedCells)) {
+		backTrack(endCell, closedCells, grid);
+	}
+	return (closedCells);
 }
 
 
@@ -264,6 +348,7 @@ int main()
 	vector<int>	EggCells;
 
 	for (int i = 0; i < numberOfCells; i++) {
+		levelMap.Cells[i].index = i;
 		cin	>> levelMap.Cells[i].type >> levelMap.Cells[i].initialResources
 			>> levelMap.Cells[i].neigh[0] >> levelMap.Cells[i].neigh[1]
 			>> levelMap.Cells[i].neigh[2] >> levelMap.Cells[i].neigh[3]
@@ -283,20 +368,31 @@ int main()
 		cin >> levelMap.opBaseIndex; cin.ignore();
 	}
 
-
 	// MAPPING COORDINATES //
+
+	cerr << endl << numberOfCells << endl;
 
 	map_coordinates(levelMap);
 
+	// for (Cell cell : levelMap.Cells)
+	// {
+	// 	cerr << "index is: "
+	// 		<< cell.index
+	// 		<< endl;
+	// 	cerr << "adress is: "
+	// 		<< cell.cube.q << " ," << cell.cube.r << ", " << cell.cube.s
+	// 		<< endl;
+	// 	cerr << "neighbors are: " ;
+	// 		for (int i : cell.neigh)
+	// 		{
+	// 			cerr << i << ", ";
+	// 		}
+	// 		cerr << endl;
+	// }
+
+	aStar(levelMap.myBaseIndex, 60, levelMap.Cells);
+
 	// DISTANCE CALC //
-
-	cerr << "the distance between index 28 and base is: "
-		 << hex_distance(levelMap.Cells[21].cube, levelMap.Cells[28].cube)
-		  << endl;
-
-	cerr << "the distance between index 22 and base is: "
-		 << hex_distance(levelMap.Cells[21].cube, levelMap.Cells[22].cube)
-		  << endl;
 
 	// usleep(950000);
 	// game loop
