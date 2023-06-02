@@ -74,9 +74,9 @@ public:
 	Hex	cube;
 
 	//a * variables
-	int g = -1;
-	int h = -1;
-	int f = -1;
+	int g = 0;
+	int h = 0;
+	int f = 0;
 
 	int resources;
 	int myAnts;
@@ -196,6 +196,24 @@ void	map_coordinates(Map& lvMap) {
 
 /******		PATHFINDING FUNCTIONS		******/
 
+list<int>	aStar(int startCell, int end, vector<Cell> grid) {
+
+	list<Cell>	openCells;
+	list<Cell>	closedCells;
+
+	Cell	currentCell = grid[startCell];
+	Cell	endCell = grid[end];
+	currentCell.g = 0;
+	currentCell.h = hex_distance(currentCell.cube, endCell.cube);
+	openCells.push_back(currentCell);
+
+	while (!openCells.empty())
+	{
+		
+	}
+
+	return (list<int> {});
+}
 
 
 /******		Main		******/
