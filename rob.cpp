@@ -233,11 +233,9 @@ list<Cell>	backTrack(Cell endCell, list<Cell> closedCells, vector<Cell> &grid) {
 	currentCell = endCell;
 	for (Cell cell : closedCells) {
 		cerr << "i:" << cell.index << " , g:" << cell.g << endl;
+		cerr << "i:" << grid[cell.index].index << " , g:" << grid[cell.index].g << endl; //grid is not beeing atualized
 	}
 	cerr << endl;
-	// cerr << "n of Cells: " << closedCells.size() << endl;
-	// cerr << "index endCell: " << endCell.g << endl;
-	// cerr << "index endCell: " << closedCells.back().g << endl;
 	finalPath.push_front(currentCell);
 	while (currentCell.g != 0) {
 		cerr << "entrou no loop" << endl;
@@ -276,47 +274,23 @@ list<Cell>	aStar(int startCell, int end, vector<Cell> &grid) {
 	openCells.push_back(currentCell);
 
 	while (!openCells.empty())
-	// for (int a = 0; a < 10; a++)
 	{
 		openCells.sort(&compareFGHValues);
 		currentCell = openCells.front();
-		// for (Cell cell : openCells)
-		// {
-			// cerr << "rodada " << a << endl;
-		// 	cerr << "index is: "
-		// 		<< cell.index
-		// 		<< endl;
-		// 	cerr << "adress is: "
-		// 		<< cell.cube.q << " ," << cell.cube.r << ", " << cell.cube.s
-		// 		<< endl;
-		// 	cerr << "neighbors are: " ;
-		// 		for (int i : cell.neigh)
-		// 		{
-		// 			cerr << i << ", ";
-		// 		}
-		// 		cerr << endl;
-		// }
 		openCells.remove(currentCell);
 		closedCells.push_front(currentCell);
 		g = currentCell.g + 1;
 		if (findCell(endCell, closedCells)) {
-			// cerr <<"found end cell" << endl;
 			break;
 		}
-		// else
-			// cerr <<"end cell not found" << endl;
 		for (int neighIndex : currentCell.neigh) {
 			if (neighIndex == -1) {
-				// cerr << "neighbor not found." <<endl;
 				continue;
 			}
 			Cell neigh = grid[neighIndex];
-			// cerr << "neighbor found, index: " << neighIndex << endl;
 			if (findCell(neigh, closedCells)) {
-				// cerr << "already in closedCells" << endl;
 				continue;
 			}
-			// cerr << "neighbor not in closedCells, index:" << neigh.index <<endl;
 			if (!findCell(neigh, openCells)) {
 				neigh.g = g;
 				neigh.h = hex_distance(neigh.cube, endCell.cube);
@@ -390,7 +364,7 @@ int main()
 	// 		cerr << endl;
 	// }
 
-	aStar(levelMap.myBaseIndex, 60, levelMap.Cells);
+	aStar(levelMap.myBaseIndex, 69, levelMap.Cells);
 
 	// DISTANCE CALC //
 
