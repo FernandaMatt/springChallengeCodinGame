@@ -327,6 +327,45 @@ vector<vector<int>> calcDistancesMatrix(int nOfCells, vector<Cell> &grid) {
 	return (mDist);
 }
 
+/******		CALCULATE PATH		******/
+
+//auxiliary functions
+
+list<int> vectorToList(const vector<int>& vec) {
+    list<int> lst(vec.begin(), vec.end());
+    return (lst);
+}
+
+int	findClosestUnmapped(int baseIndex, list<int>ResCells, vector<vector<int>> dMatrix) {
+
+	int	closestCell;
+
+	closestCell = ResCells.front();
+	for (int cell : ResCells) {
+		if (dMatrix[baseIndex][cell] < dMatrix[baseIndex][closestCell])
+			closestCell = cell;
+	}
+	return (closestCell);
+}
+
+//calculate path
+list<int> calculatePath(int baseIndex, list<int> ResCells, vector<Cell> grid, vector<vector<int>> distMatrix) {
+
+	list<int>	mappedCells;
+	int			currentRes;
+
+	mappedCells.push_back(baseIndex);
+	while (ResCells.size() != 0) {
+		currentRes = findClosestUnmapped(baseIndex, ResCells, distMatrix);
+		ResCells.remove(currentRes);
+		mappedCells.push_back(currentRes); //ao invés de adicionar só o destino, adicionar todas as células que incluem o caminho mais curto até o destino. a primeira passagem que vai sair da base tem q ser tirada do loop ? depois traçamos a partir da menor distancia do destino (currentRes) até a mappedCell mais próxima.
+		//verificar se mais alguma das células em ResCells foram adicionadas a mappedCells, se sim, remover de ResCells (usar remove_if passando como condição o valor estar em mappedCells ??)
+		//escolher próximo currentRes achando o mais próximo da base, verificar caminho mais próximo entre esse nó e os mapped Cells
+		//adicionar células do caminho ao mappedCells, remover de ResCells e seguir o loop até o fim
+	}
+	return(mappedCells);
+}
+
 /******		MAIN		******/
 
 int main()
