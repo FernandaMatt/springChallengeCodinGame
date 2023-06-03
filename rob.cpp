@@ -5,7 +5,10 @@
 #include <cassert>
 #include <unistd.h>
 #include <list>
-#include <map>
+// #include <map>
+// #include <iterator>
+#include <iomanip>
+
 
 using namespace std;
 
@@ -234,7 +237,6 @@ list<int>	backTrack(Cell endCell, list<Cell*> closedCells, vector<Cell> &grid) {
 	list<int> finalPath;
 	Cell *currentCell;
 	currentCell = &endCell;
-	cerr << endl;
 	finalPath.push_front(currentCell->index);
 	while (currentCell->g != 0) {
 		for (int neighIndex : currentCell->neigh) {
@@ -302,12 +304,29 @@ list<int>	aStar(int startCell, int end, vector<Cell> &grid) {
 	return (finalPath);
 }
 
-/******		DISTANCE CALC		******/
+/******		DISTANCE CALC AND MAP		******/
 
 int	distance(int start, int end, vector<Cell> &grid) {
 	list<int> path;
 	path = aStar(start, end, grid);
-	return (path.size());
+	return (path.size() - 1);
+}
+
+bool cmp(pair<int, int>& a, pair<int, int>& b)
+{
+    return a.second < b.second;
+}
+
+vector<vector<int>> calcDistances(int nOfCells, vector<Cell> &grid) {
+
+	vector<vector<int>> mDist(nOfCells, vector<int>(nOfCells));
+
+	for (int i = 0; i < nOfCells; i++) {
+		for (int j = 0; j < nOfCells; j++) {
+			mDist[i][j] = distance(i, j, grid);
+		}
+	}
+	return (mDist);
 }
 
 /******		Main		******/
@@ -321,7 +340,7 @@ int main()
 	vector<int>	ResCells;
 	vector<int>	EggCells;
 	list<int>	path;
-	map<int, int, greater<int>> cellDistances;
+	int			dist;
 
 	for (int i = 0; i < numberOfCells; i++) {
 		levelMap.Cells[i].index = i;
@@ -348,16 +367,12 @@ int main()
 
 	map_coordinates(levelMap);
 
-	cerr << endl;
+	// CALCULATING DISTANCES //
 
-	for (int ResIndex : ResCells) {
-		path = aStar(levelMap.myBaseIndex, ResIndex, levelMap.Cells);
-		cerr << "end: " << ResIndex <<endl;
-		for (int num : path) {
-			cerr << num << ", " ;
-		}
-		cerr << endl;
-	}
+	vector<vector<int>> distMatrix;
+
+	distMatrix = calcDistances(levelMap.numberOfCells, levelMap.Cells);
+
 
 	while (1) {
 		for (int i = 0; i < numberOfCells; i++) {
@@ -378,3 +393,20 @@ int main()
 		cout << endl;
 	}
 }
+
+//PRINT DISTANCE MATRIX
+
+	// cerr << "   ";
+	// for (int i = 0; i < levelMap.numberOfCells; i++) {
+	// 	cerr << setw(2) << i << " ";
+	// }
+	// cerr << endl;
+	// int i = 0;
+	// for (vector <int> line : distMatrix) {
+	// 	cerr << setw(2) << i << " ";
+	// 	for (int dist : line) {
+	// 		cerr << setw(2) << dist << " ";
+	// 	}
+	// 	cerr << endl;
+	// 	i++;
+	// }
