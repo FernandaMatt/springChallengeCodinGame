@@ -5,6 +5,7 @@
 #include <cassert>
 #include <unistd.h>
 #include <list>
+#include <map>
 
 using namespace std;
 
@@ -102,7 +103,7 @@ Cell::~Cell()
 }
 
 
-class Map
+class gridLvl
 {
 private:
 
@@ -112,15 +113,15 @@ public:
 	int				numberOfBases;
 	int				myBaseIndex;
 	int				opBaseIndex;
-	Map(int nCells);
-	~Map();
+	gridLvl(int nCells);
+	~gridLvl();
 };
 
-Map::Map(int nCells) : numberOfCells(nCells), Cells(nCells)
+gridLvl::gridLvl(int nCells) : numberOfCells(nCells), Cells(nCells)
 {
 }
 
-Map::~Map()
+gridLvl::~gridLvl()
 {
 }
 
@@ -158,7 +159,7 @@ bool	findCellindex(int cellIndex, list<int> list) {
 	return false;
 }
 
-int	nextResourceful(Map lvMap, int type)
+int	nextResourceful(gridLvl lvMap, int type)
 {
 	int	nextRes = -1;
 
@@ -174,7 +175,7 @@ int	nextResourceful(Map lvMap, int type)
 
 /******		MAP FUNCTIONS		******/
 
-void	map_coordinates(Map& lvMap) {
+void	map_coordinates(gridLvl& lvMap) {
 	
 	list<int>	unmapped;
 	list<int>	mapped;
@@ -201,76 +202,69 @@ void	map_coordinates(Map& lvMap) {
 	}
 };
 
-/******		PATHFINDING FUNCTIONS		******/
+/******		PATHFINDING ALGORITHM		******/
 
-bool	findCell(Cell end, list<Cell> list) {
+//auxiliary functions
+bool	findCell(Cell *end, list<Cell*> list) {
 	
-	for (Cell cell : list) {
-		if (cell.index == end.index)
+	for (Cell *cell : list) {
+		if (cell->index == end->index)
 			return true;
 	}
 	return false;
 }
 
-bool	compareFGHValues (Cell a, Cell b) {
-	if (a.f < b.f)
+bool	compareFGHValues (Cell *a, Cell *b) {
+	if (a->f < b->f)
 		return (true);
-	else if (b.f < a.f)
+	else if (b->f < a->f)
 		return (false);
 	else {
-		if (a.h < b.h)
+		if (a->h < b->h)
 			return (true);
-		else if (a.h > b.h)
+		else if (a->h > b->h)
 			return (false);
 	}
 	return false;
 }
 
-list<Cell>	backTrack(Cell endCell, list<Cell> closedCells, vector<Cell> &grid) {
+//A*
+list<int>	backTrack(Cell endCell, list<Cell*> closedCells, vector<Cell> &grid) {
 
-	list<Cell> finalPath;
-	Cell currentCell;
-	currentCell = endCell;
-	for (Cell cell : closedCells) {
-		cerr << "i:" << cell.index << " , g:" << cell.g << endl;
-		cerr << "i:" << grid[cell.index].index << " , g:" << grid[cell.index].g << endl; //grid is not beeing atualized
-	}
+	list<int> finalPath;
+	Cell *currentCell;
+	currentCell = &endCell;
 	cerr << endl;
-	finalPath.push_front(currentCell);
-	while (currentCell.g != 0) {
-		cerr << "entrou no loop" << endl;
-		for (int neighIndex : endCell.neigh) {
+	finalPath.push_front(currentCell->index);
+	while (currentCell->g != 0) {
+		for (int neighIndex : currentCell->neigh) {
 			if ( neighIndex == -1) {
 				continue ;
 			}
-			Cell neigh = grid[neighIndex];
+			Cell *neigh = &grid[neighIndex];
 			if (findCell(neigh, closedCells)) {
-				if (neigh.g < currentCell.g) {
-					finalPath.push_front(neigh);
+				if (neigh->g < currentCell->g) {
+					finalPath.push_front(neigh->index);
 					currentCell = neigh;
 					break ;
 				}
 			}
 		}
 	}
-	for (Cell cell : finalPath) {
-		cerr << cell.index << ", " ;
-	}
-	cerr << endl;
 	return (finalPath);
 }
 
-list<Cell>	aStar(int startCell, int end, vector<Cell> &grid) {
+list<int>	aStar(int startCell, int end, vector<Cell> &grid) {
 
-	list<Cell>	openCells;
-	list<Cell>	closedCells;
+	list<Cell*>	openCells;
+	list<Cell*>	closedCells;
 	int			g;
 
-	Cell	currentCell = grid[startCell];
-	Cell	endCell = grid[end];
-	currentCell.g = 0;
-	currentCell.h = hex_distance(currentCell.cube, endCell.cube);
-	currentCell.f = currentCell.g + currentCell.h;
+	Cell	*currentCell = &grid[startCell];
+	Cell	&endCell = grid[end];
+	currentCell->g = 0;
+	currentCell->h = hex_distance(currentCell->cube, endCell.cube);
+	currentCell->f = currentCell->g + currentCell->h;
 	openCells.push_back(currentCell);
 
 	while (!openCells.empty())
@@ -279,36 +273,42 @@ list<Cell>	aStar(int startCell, int end, vector<Cell> &grid) {
 		currentCell = openCells.front();
 		openCells.remove(currentCell);
 		closedCells.push_front(currentCell);
-		g = currentCell.g + 1;
-		if (findCell(endCell, closedCells)) {
+		g = currentCell->g + 1;
+		if (findCell(&endCell, closedCells)) {
 			break;
 		}
-		for (int neighIndex : currentCell.neigh) {
+		for (int neighIndex : currentCell->neigh) {
 			if (neighIndex == -1) {
 				continue;
 			}
-			Cell neigh = grid[neighIndex];
+			Cell *neigh = &grid[neighIndex];
 			if (findCell(neigh, closedCells)) {
 				continue;
 			}
 			if (!findCell(neigh, openCells)) {
-				neigh.g = g;
-				neigh.h = hex_distance(neigh.cube, endCell.cube);
-				neigh.f = neigh.g + neigh.h;
+				neigh->g = g;
+				neigh->h = hex_distance(neigh->cube, endCell.cube);
+				neigh->f = neigh->g + neigh->h;
 				openCells.push_front(neigh);
 			}
-			else if (neigh.f > g + neigh.h)
-				neigh.g = g;
+			else if (neigh->f > g + neigh->h)
+				neigh->g = g;
 		}
 	}
-	list<Cell> finalPath;
-
-	if (findCell(endCell, closedCells)) {
-		backTrack(endCell, closedCells, grid);
+	list<int> finalPath;
+	if (findCell(&endCell, closedCells)) {
+		finalPath = backTrack(endCell, closedCells, grid);
 	}
-	return (closedCells);
+	return (finalPath);
 }
 
+/******		DISTANCE CALC		******/
+
+int	distance(int start, int end, vector<Cell> &grid) {
+	list<int> path;
+	path = aStar(start, end, grid);
+	return (path.size());
+}
 
 /******		Main		******/
 
@@ -317,9 +317,11 @@ int main()
 	int numberOfCells;
 	cin >> numberOfCells; cin.ignore();
 	
-	Map 		levelMap(numberOfCells);
+	gridLvl 		levelMap(numberOfCells);
 	vector<int>	ResCells;
 	vector<int>	EggCells;
+	list<int>	path;
+	map<int, int, greater<int>> cellDistances;
 
 	for (int i = 0; i < numberOfCells; i++) {
 		levelMap.Cells[i].index = i;
@@ -344,32 +346,18 @@ int main()
 
 	// MAPPING COORDINATES //
 
-	cerr << endl << numberOfCells << endl;
-
 	map_coordinates(levelMap);
 
-	// for (Cell cell : levelMap.Cells)
-	// {
-	// 	cerr << "index is: "
-	// 		<< cell.index
-	// 		<< endl;
-	// 	cerr << "adress is: "
-	// 		<< cell.cube.q << " ," << cell.cube.r << ", " << cell.cube.s
-	// 		<< endl;
-	// 	cerr << "neighbors are: " ;
-	// 		for (int i : cell.neigh)
-	// 		{
-	// 			cerr << i << ", ";
-	// 		}
-	// 		cerr << endl;
-	// }
+	cerr << endl;
 
-	aStar(levelMap.myBaseIndex, 69, levelMap.Cells);
-
-	// DISTANCE CALC //
-
-	// usleep(950000);
-	// game loop
+	for (int ResIndex : ResCells) {
+		path = aStar(levelMap.myBaseIndex, ResIndex, levelMap.Cells);
+		cerr << "end: " << ResIndex <<endl;
+		for (int num : path) {
+			cerr << num << ", " ;
+		}
+		cerr << endl;
+	}
 
 	while (1) {
 		for (int i = 0; i < numberOfCells; i++) {
