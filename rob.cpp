@@ -6,7 +6,7 @@
 #include <unistd.h>
 #include <list>
 // #include <map>
-// #include <iterator>
+#include <iterator>
 #include <iomanip>
 
 
@@ -48,8 +48,6 @@ struct Hex {
         return (q == cpHex.q) && (r == cpHex.r) && (s == cpHex.s);
     }
 };
-
-
 
 void	Hex::set(int q_, int r_, int s_){
 
@@ -105,7 +103,6 @@ Cell::~Cell()
 {
 }
 
-
 class gridLvl
 {
 private:
@@ -128,7 +125,6 @@ gridLvl::~gridLvl()
 {
 }
 
-
 /******		HEX FUNCTIONS		******/
 
 Hex hex_subtract(Hex a, Hex b) {
@@ -143,6 +139,23 @@ int hex_distance(Hex a, Hex b) {
     return hex_length(hex_subtract(a, b));
 }
 
+int	nextResourceful(gridLvl lvMap, int type)
+{
+	int	nextRes = -1;
+
+	for (size_t i = 0; i < lvMap.numberOfCells; i++)
+	{
+		if (lvMap.Cells[i].type == type && lvMap.Cells[i].resources > 0){
+			nextRes = i;
+			return (nextRes);
+		}
+	}
+	return (nextRes);
+}
+
+/******		MAP FUNCTIONS		******/
+
+//auxiliary functions
 list<int>	initCellList(int a, int b) {
 
 	list<int> cellList;
@@ -162,22 +175,7 @@ bool	findCellindex(int cellIndex, list<int> list) {
 	return false;
 }
 
-int	nextResourceful(gridLvl lvMap, int type)
-{
-	int	nextRes = -1;
-
-	for (size_t i = 0; i < lvMap.numberOfCells; i++)
-	{
-		if (lvMap.Cells[i].type == type && lvMap.Cells[i].resources > 0){
-			nextRes = i;
-			return (nextRes);
-		}
-	}
-	return (nextRes);
-}
-
-/******		MAP FUNCTIONS		******/
-
+//map cube coordinates
 void	map_coordinates(gridLvl& lvMap) {
 	
 	list<int>	unmapped;
@@ -304,7 +302,7 @@ list<int>	aStar(int startCell, int end, vector<Cell> &grid) {
 	return (finalPath);
 }
 
-/******		DISTANCE CALC AND MAP		******/
+/******		DISTANCE CALC		******/
 
 int	distance(int start, int end, vector<Cell> &grid) {
 	list<int> path;
@@ -317,7 +315,7 @@ bool cmp(pair<int, int>& a, pair<int, int>& b)
     return a.second < b.second;
 }
 
-vector<vector<int>> calcDistances(int nOfCells, vector<Cell> &grid) {
+vector<vector<int>> calcDistancesMatrix(int nOfCells, vector<Cell> &grid) {
 
 	vector<vector<int>> mDist(nOfCells, vector<int>(nOfCells));
 
@@ -329,18 +327,18 @@ vector<vector<int>> calcDistances(int nOfCells, vector<Cell> &grid) {
 	return (mDist);
 }
 
-/******		Main		******/
+/******		MAIN		******/
 
 int main()
 {
+	// READ INITIAL INPUT //
+
 	int numberOfCells;
 	cin >> numberOfCells; cin.ignore();
-	
-	gridLvl 		levelMap(numberOfCells);
+
+	gridLvl 	levelMap(numberOfCells);
 	vector<int>	ResCells;
 	vector<int>	EggCells;
-	list<int>	path;
-	int			dist;
 
 	for (int i = 0; i < numberOfCells; i++) {
 		levelMap.Cells[i].index = i;
@@ -354,7 +352,6 @@ int main()
 		if (levelMap.Cells[i].type == 1)
 			EggCells.push_back(i);
 	}
-
 	cin >> levelMap.numberOfBases; cin.ignore();
 	for (int i = 0; i < levelMap.numberOfBases; i++) {
 		cin >> levelMap.myBaseIndex; cin.ignore();
@@ -371,14 +368,20 @@ int main()
 
 	vector<vector<int>> distMatrix;
 
-	distMatrix = calcDistances(levelMap.numberOfCells, levelMap.Cells);
+	distMatrix = calcDistancesMatrix(levelMap.numberOfCells, levelMap.Cells);
 
+	// GAME LOOP //
 
 	while (1) {
 		for (int i = 0; i < numberOfCells; i++) {
 			cin >> levelMap.Cells[i].resources >> levelMap.Cells[i].myAnts
 			>> levelMap.Cells[i].opAnts;
 			cin.ignore();
+		}
+		// checking for depleted ResourceCells;
+		for (vector<int>::iterator it = ResCells.begin(); it !=ResCells.end(); it++) {
+			if (!levelMap.Cells[*it].resources)
+				ResCells.erase(it);
 		}
 
 		for (int i = 0; i < numberOfCells; i++) {
