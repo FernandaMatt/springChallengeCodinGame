@@ -8,6 +8,7 @@
 // #include <map>
 #include <iterator>
 #include <iomanip>
+#include <set>
 
 
 using namespace std;
@@ -18,7 +19,7 @@ using namespace std;
 struct Hex {
 
 	int q, r, s; //cube coordinates
-    
+        
 	Hex(void): q(-1), r(-1), s(-1){}; //cube default constructor NOT ASSIGNING -1??
 	Hex(int q_, int r_, int s_): q(q_), r(r_), s(s_) { //cube constructor
 		assert (q + r + s == 0);
@@ -166,7 +167,7 @@ list<int>	initCellList(int a, int b) {
     return cellList;
 }
 
-bool	findCellindex(int cellIndex, list<int> list) {
+bool	findCellIndex(int cellIndex, list<int> list) {
 	
 	for (int cell : list) {
 		if (cell == cellIndex)
@@ -194,7 +195,7 @@ void	map_coordinates(gridLvl& lvMap) {
 		curCell = mapped.back();
 		mapped.remove(curCell);
 		for (int i = 0; i < 6; i++){
-			if (lvMap.Cells[curCell].neigh[i] != -1 && findCellindex(lvMap.Cells[curCell].neigh[i], unmapped)) {
+			if (lvMap.Cells[curCell].neigh[i] != -1 && findCellIndex(lvMap.Cells[curCell].neigh[i], unmapped)) {
 				lvMap.Cells[lvMap.Cells[curCell].neigh[i]].cube = lvMap.Cells[curCell].cube + dirVector[i];
 				unmapped.remove(lvMap.Cells[curCell].neigh[i]);
 				mapped.push_back(lvMap.Cells[curCell].neigh[i]);
@@ -336,37 +337,190 @@ list<int> vectorToList(const vector<int>& vec) {
     return (lst);
 }
 
-int	findClosestUnmapped(int baseIndex, list<int>ResCells, vector<vector<int>> dMatrix) {
+int	findClosestCell(int cellIndex, list<int>cellList, vector<vector<int>> dMatrix) {
 
 	int	closestCell;
 
-	closestCell = ResCells.front();
-	for (int cell : ResCells) {
-		if (dMatrix[baseIndex][cell] < dMatrix[baseIndex][closestCell])
+	closestCell = cellList.front();
+	for (int cell : cellList) {
+		if (dMatrix[cellIndex][cell] < dMatrix[cellIndex][closestCell])
 			closestCell = cell;
 	}
 	return (closestCell);
 }
 
+void removeCommonValues(std::list<int>& a, const std::list<int>& b) {
+
+    a.remove_if( [&b](int value) {return (find(b.begin(), b.end(), value) != b.end());} );
+}
+
+void addUniqueValues(std::list<int>& cmpList, std::list<int>& assingList) {
+
+    set<int> uniqueValues(assingList.begin(), assingList.end());  // Copy elements of list assingList to cmpList set
+
+    for (const auto& value : cmpList) {
+        uniqueValues.insert(value);  // Insert each value from list cmpList into the set
+    }
+    assingList.assign(uniqueValues.begin(), uniqueValues.end());  // Copy unique values from the set back to list assingList
+}
+
+vector<pair<int, list<int>>> recalcPaths(int baseIndex, vector<pair<int, list<int>>> paths, vector<Cell> grid, vector<vector<int>> distMatrix) {
+
+    list<int> targets;
+
+    for (auto i : paths)
+        targets.push_back(i.first);
+
+    list<int>	        shortestPath;
+    list<int>	        mappedCells;
+    vector<pair<int, list<int>>> newPaths;
+	int		        	targ;
+	int		        	closestMappedCell;
+    static int          is = 0;
+
+    // cerr << "Rodada: " << is << endl << endl;
+    mappedCells.push_back(baseIndex);
+    while (!targets.empty()) {
+        removeCommonValues(targets, mappedCells);
+        targ = findClosestCell(baseIndex, targets, distMatrix);
+        targets.remove(targ);
+        cerr << targ << endl;
+        cerr << "Closest MappedCell:" << endl;
+        closestMappedCell = findClosestCell(targ, mappedCells, distMatrix);
+        cerr << closestMappedCell << endl;
+        shortestPath = aStar(closestMappedCell, targ, grid);
+        pair<int, list<int>> path;
+        path.first = targ;
+        path.second = shortestPath;
+        newPaths.push_back(path);
+        cerr << "Shortest path from closest ResCell to closest MappedCell:" << endl;
+        for (int cell : shortestPath)
+            cerr << cell << ", ";
+        cerr << endl;
+        addUniqueValues(shortestPath, mappedCells);
+        cerr << "Remaining targets:" << endl;
+        for (int Res : targets)
+            cerr << Res << ", ";
+        cerr << endl;
+        cerr << "MappedCells:" << endl;
+        for (int Res : mappedCells)
+            cerr << Res << ", ";
+        cerr << endl;
+        shortestPath.remove(baseIndex);
+    }
+    cerr << "Returned MappedCells:" << endl;
+    for (int Res : mappedCells)
+        cerr << Res << ", ";
+    cerr << endl;
+	return(newPaths);
+}
+
 //calculate path
 list<int> calculatePath(int baseIndex, list<int> ResCells, vector<Cell> grid, vector<vector<int>> distMatrix) {
 
-	list<int>	mappedCells;
-	int			currentRes;
+	static list<int>	mappedCells = {baseIndex};
+	static list<int>	shortestPath;
+	int		        	currentRes;
+	int		        	closestMappedCell;
+    static vector<pair<int, list<int>>>    paths;
+    static int          npaths = 0;
+    static int  is = 0;
 
-	mappedCells.push_back(baseIndex);
-	while (ResCells.size() != 0) {
-		currentRes = findClosestUnmapped(baseIndex, ResCells, distMatrix);
-		ResCells.remove(currentRes);
-		mappedCells.push_back(currentRes); //ao invés de adicionar só o destino, adicionar todas as células que incluem o caminho mais curto até o destino. a primeira passagem que vai sair da base tem q ser tirada do loop ? depois traçamos a partir da menor distancia do destino (currentRes) até a mappedCell mais próxima.
-		//verificar se mais alguma das células em ResCells foram adicionadas a mappedCells, se sim, remover de ResCells (usar remove_if passando como condição o valor estar em mappedCells ??)
-		//escolher próximo currentRes achando o mais próximo da base, verificar caminho mais próximo entre esse nó e os mapped Cells
-		//adicionar células do caminho ao mappedCells, remover de ResCells e seguir o loop até o fim
-	}
+	// mappedCells.push_back(baseIndex);
+    cerr << "Rodada: " << is << endl << endl;
+    // cerr << "ResCells:" << endl;
+    // for (int Res : ResCells)
+    //     cerr << Res << ", ";
+    // cerr << endl;
+
+    if (is > 0) {
+
+        for (auto it = paths.begin(); it != paths.end(); ) {
+
+            if (!findCellIndex(it->first, ResCells)) {
+
+                for (int cell : it->second) {
+
+                    mappedCells.remove(cell);
+                    shortestPath.remove(cell);
+                }
+                it = paths.erase(it); // Remove o par do vetor
+            }
+            else
+                ++it; // Incrementa o iterador apenas se o par não foi removido
+        }
+        paths = recalcPaths(baseIndex, paths, grid, distMatrix);
+    }
+    // if (mappedCells.size() > 1) {
+    //     for (pair path : paths) {
+    //         if (!findCellIndex(path.first, ResCells)) {
+    //             for (int cell : path.second) {
+    //                 mappedCells.remove(cell);
+    //                 shortestPath.remove(cell);
+    //             }
+    //     }
+    // }
+    // }
+    if (shortestPath.empty()) {
+        removeCommonValues(ResCells, mappedCells);
+        currentRes = findClosestCell(baseIndex, ResCells, distMatrix); //find the resource cell closest to the base
+        // cerr << "Closest ResCell:" << endl;
+        // cerr << currentRes << endl;
+        // cerr << "Closest MappedCell:" << endl;
+        closestMappedCell = findClosestCell(currentRes, mappedCells, distMatrix); //find the Cell already with beacons/ants closest to the resource cell
+        // cerr << closestMappedCell << endl;
+        shortestPath = aStar(closestMappedCell, currentRes, grid); // calculating shortest path to target resource from the closest cell with beacons/ants
+        pair<int, list<int>> path;
+        path.first = currentRes;
+        path.second = shortestPath;
+        paths.push_back(path);
+        // cerr << "Shortest path from closest ResCell to closest MappedCell:" << endl;
+        // for (int cell : shortestPath)
+        //     cerr << cell << ", ";
+        // cerr << endl;
+        addUniqueValues(shortestPath, mappedCells);
+        // cerr << "Remaining ResCells:" << endl;
+        // for (int Res : ResCells)
+        //     cerr << Res << ", ";
+        // cerr << endl;
+        // cerr << "MappedCells:" << endl;
+        // for (int Res : mappedCells)
+        //     cerr << Res << ", ";
+        // cerr << endl;
+        shortestPath.remove(baseIndex);
+        npaths++;
+    }
+    mappedCells.push_back(shortestPath.front());
+    shortestPath.pop_front();
+    is++;
+    if (!findCellIndex(baseIndex, mappedCells)) {
+        closestMappedCell = findClosestCell(baseIndex, mappedCells, distMatrix);
+        shortestPath = aStar(closestMappedCell, baseIndex, grid);
+        addUniqueValues(shortestPath, mappedCells);
+    }
+    cerr << "Returned MappedCells:" << endl;
+    for (int Res : mappedCells)
+        cerr << Res << ", ";
+    cerr << endl;
 	return(mappedCells);
 }
 
 /******		MAIN		******/
+
+std::vector<int> mergeVectors(const std::vector<int>& vectorA, const std::vector<int>& vectorB) {
+
+    std::vector<int> mergedVector;
+
+    mergedVector.reserve(vectorA.size() + vectorB.size());
+    std::merge(vectorA.begin(), vectorA.end(), vectorB.begin(), vectorB.end(), std::back_inserter(mergedVector));
+    return (mergedVector);
+}
+
+std::list<int> mergeLists(const std::list<int>& listA, const std::list<int>& listB) {
+    std::list<int> mergedList(listA.begin(), listA.end());  // Copia elementos de listA para mergedList
+    mergedList.insert(mergedList.end(), listB.begin(), listB.end());  // Insere elementos de listB em mergedList
+    return mergedList;
+}
 
 int main()
 {
@@ -376,8 +530,8 @@ int main()
 	cin >> numberOfCells; cin.ignore();
 
 	gridLvl 	levelMap(numberOfCells);
-	vector<int>	ResCells;
-	vector<int>	EggCells;
+	list<int>	crisCells;
+	list<int>	eggCells;
 
 	for (int i = 0; i < numberOfCells; i++) {
 		levelMap.Cells[i].index = i;
@@ -387,9 +541,9 @@ int main()
 			>> levelMap.Cells[i].neigh[4] >> levelMap.Cells[i].neigh[5];
 			cin.ignore();
 		if (levelMap.Cells[i].type == 2)
-			ResCells.push_back(i);
+			crisCells.push_back(i);
 		if (levelMap.Cells[i].type == 1)
-			EggCells.push_back(i);
+			eggCells.push_back(i);
 	}
 	cin >> levelMap.numberOfBases; cin.ignore();
 	for (int i = 0; i < levelMap.numberOfBases; i++) {
@@ -398,6 +552,9 @@ int main()
 	for (int i = 0; i < levelMap.numberOfBases; i++) {
 		cin >> levelMap.opBaseIndex; cin.ignore();
 	}
+
+    // resCells = mergeLists(crisCells, eggCells);
+
 
 	// MAPPING COORDINATES //
 
@@ -409,30 +566,26 @@ int main()
 
 	distMatrix = calcDistancesMatrix(levelMap.numberOfCells, levelMap.Cells);
 
-	// GAME LOOP //
+    list<int>   path;
 
+	// GAME LOOP //
 	while (1) {
+	    list<int>	resCells;
 		for (int i = 0; i < numberOfCells; i++) {
 			cin >> levelMap.Cells[i].resources >> levelMap.Cells[i].myAnts
 			>> levelMap.Cells[i].opAnts;
 			cin.ignore();
+            if (levelMap.Cells[i].resources > 0)
+                resCells.push_back(i);
+        }
+        cerr << endl;
+        path = calculatePath(levelMap.myBaseIndex, resCells, levelMap.Cells, distMatrix);
+		for (int cellIndex : path) {
+            cout << "BEACON " << cellIndex << " " << 1 << ";" ;
 		}
-		// checking for depleted ResourceCells;
-		for (vector<int>::iterator it = ResCells.begin(); it !=ResCells.end(); it++) {
-			if (!levelMap.Cells[*it].resources)
-				ResCells.erase(it);
-		}
-
-		for (int i = 0; i < numberOfCells; i++) {
-			if (levelMap.Cells[i].resources != 0) {
-				cout << "LINE " << levelMap.myBaseIndex << " " << i ;
-				if (levelMap.Cells[i].type == 1)
-					cout << " 3 ;";
-				else
-					cout << " 2 ;";
-			}
-		}
-		cout << endl;
+        // cout << "LINE 31 21 1; ";
+        // cout << "LINE 21 24 1";
+        cout << endl;
 	}
 }
 
